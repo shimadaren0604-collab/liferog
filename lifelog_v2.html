@@ -1,0 +1,1452 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ライフログ</title>
+  <!-- Chart.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <style>
+/* ============================================================
+   デザイントークン・リセット
+============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* カラーパレット — インク＆クリーム系エディトリアル */
+  --ink:       #1a1a2e;
+  --ink-2:     #2e2e4a;
+  --ink-3:     #4a4a6a;
+  --muted:     #8888aa;
+  --border:    #e4e4f0;
+  --bg:        #f7f7fb;
+  --card:      #ffffff;
+  --cream:     #fdfcf9;
+
+  /* アクセントカラー */
+  --accent:    #5b5bd6;   /* 紫インジゴ */
+  --accent-2:  #e05d8c;   /* ローズ */
+  --accent-3:  #27ae7a;   /* エメラルド */
+  --amber:     #e8903a;   /* アンバー */
+
+  /* グラデーション */
+  --grad-accent: linear-gradient(135deg, #5b5bd6 0%, #8b5cf6 100%);
+  --grad-rose:   linear-gradient(135deg, #e05d8c 0%, #f59e9e 100%);
+  --grad-green:  linear-gradient(135deg, #27ae7a 0%, #4fd1a5 100%);
+  --grad-amber:  linear-gradient(135deg, #e8903a 0%, #f6c56a 100%);
+
+  /* タイポグラフィ */
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+
+  /* スペーシング */
+  --radius:  14px;
+  --radius-s: 8px;
+  --shadow:  0 1px 3px rgba(26,26,46,.06), 0 4px 16px rgba(26,26,46,.07);
+  --shadow-lg: 0 8px 32px rgba(91,91,214,.15);
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* ============================================================
+   ヘッダー
+============================================================ */
+header {
+  background: var(--ink);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  height: 56px;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  box-shadow: 0 2px 16px rgba(26,26,46,.2);
+}
+.header-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: -.01em;
+}
+.header-logo .dot {
+  width: 8px; height: 8px;
+  background: var(--accent);
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px rgba(91,91,214,.3);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%,100% { box-shadow: 0 0 0 3px rgba(91,91,214,.3); }
+  50%      { box-shadow: 0 0 0 6px rgba(91,91,214,.1); }
+}
+.header-date {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: rgba(255,255,255,.5);
+}
+
+/* ============================================================
+   タブナビゲーション
+============================================================ */
+.tabs {
+  display: flex;
+  background: var(--ink-2);
+  position: sticky;
+  top: 56px;
+  z-index: 199;
+  padding: 0 4px;
+  gap: 2px;
+}
+.tab-btn {
+  flex: 1;
+  padding: 10px 6px;
+  border: none;
+  background: transparent;
+  color: rgba(255,255,255,.45);
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all .2s;
+  letter-spacing: .02em;
+}
+.tab-btn:hover { color: rgba(255,255,255,.75); }
+.tab-btn.active {
+  color: #fff;
+  border-bottom-color: var(--accent);
+}
+
+/* ============================================================
+   メインレイアウト
+============================================================ */
+main { max-width: 900px; margin: 0 auto; padding: 20px 16px 40px; }
+
+/* パネル */
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* カード */
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px;
+  margin-bottom: 16px;
+  border: 1px solid var(--border);
+}
+.card-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .09em;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.card-title::before {
+  content: '';
+  display: inline-block;
+  width: 3px; height: 12px;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+/* ============================================================
+   フォーム部品（記録タブ共通）
+============================================================ */
+.form-group { margin-bottom: 12px; }
+label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ink-3);
+  margin-bottom: 5px;
+  letter-spacing: .02em;
+}
+input[type="text"], input[type="date"], input[type="time"],
+input[type="number"], select {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-s);
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  color: var(--ink);
+  background: var(--bg);
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+input:focus, select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(91,91,214,.12);
+}
+.row { display: flex; gap: 10px; }
+.row .form-group { flex: 1; }
+
+/* ============================================================
+   ボタン
+============================================================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: var(--radius-s);
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .18s;
+  letter-spacing: .01em;
+}
+.btn:active { transform: scale(.97); }
+.btn-primary {
+  background: var(--grad-accent);
+  color: #fff;
+  box-shadow: 0 3px 12px rgba(91,91,214,.3);
+}
+.btn-primary:hover { box-shadow: 0 6px 20px rgba(91,91,214,.45); transform: translateY(-1px); }
+.btn-outline {
+  background: transparent;
+  border: 1.5px solid var(--border);
+  color: var(--ink-3);
+}
+.btn-outline:hover { background: var(--bg); border-color: var(--accent); color: var(--accent); }
+.btn-danger { background: #fff0f4; color: var(--accent-2); border: 1.5px solid #ffd6e3; }
+.btn-danger:hover { background: #ffe0eb; }
+.btn-sm { padding: 6px 12px; font-size: 0.78rem; }
+.btn-full { width: 100%; }
+
+/* ============================================================
+   日付バー
+============================================================ */
+.date-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  box-shadow: var(--shadow);
+}
+.date-bar input[type="date"] {
+  flex: 1;
+  font-weight: 600;
+  font-size: 1rem;
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+.date-bar input[type="date"]:focus { box-shadow: none; }
+
+/* ============================================================
+   タスクリスト
+============================================================ */
+.task-list { list-style: none; margin-top: 10px; }
+.task-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.task-item:last-child { border-bottom: none; }
+.task-badge {
+  font-size: 0.7rem; font-weight: 700;
+  padding: 3px 9px; border-radius: 20px;
+  white-space: nowrap; margin-top: 2px;
+}
+.task-info { flex: 1; }
+.task-title { font-weight: 600; font-size: 0.92rem; }
+.task-time  { font-size: 0.76rem; color: var(--muted); margin-top: 2px; font-family: var(--font-mono); }
+.task-del   { color: var(--accent-2); border: none; background: none; cursor: pointer; font-size: 1rem; padding: 2px 4px; opacity: .6; }
+.task-del:hover { opacity: 1; }
+
+.cat-work    { background: #ebebff; color: #4040b8; }
+.cat-private { background: #fff4e0; color: #b87a00; }
+.cat-health  { background: #e0fff5; color: #1a8060; }
+.cat-other   { background: #f4f4f4; color: #555; }
+
+/* ============================================================
+   収支サマリー
+============================================================ */
+.money-summary { display: flex; gap: 10px; margin-top: 12px; }
+.money-box {
+  flex: 1; border-radius: var(--radius-s);
+  padding: 12px; text-align: center;
+  border: 1.5px solid transparent;
+}
+.money-box.income  { background: #f0fff8; border-color: #b2f0d5; }
+.money-box.expense { background: #fff4f7; border-color: #ffd6e3; }
+.money-box.balance { background: #f0f0ff; border-color: #c8c8f8; }
+.money-box .lbl  { font-size: 0.72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing:.06em; }
+.money-box .amt  { font-size: 1.1rem; font-weight: 800; margin-top: 4px; font-family: var(--font-mono); }
+.money-box.income .amt  { color: var(--accent-3); }
+.money-box.expense .amt { color: var(--accent-2); }
+.money-box.balance .amt { color: var(--accent); }
+
+/* 睡眠サマリー */
+.sleep-summary {
+  margin-top: 10px; padding: 10px 14px;
+  background: #f5f0ff; border: 1.5px solid #ddd0f8;
+  border-radius: var(--radius-s);
+  font-size: 0.86rem; color: #6040b8; font-weight: 600;
+  display: flex; align-items: center; gap: 8px;
+}
+
+/* ============================================================
+   履歴一覧
+============================================================ */
+.log-list { list-style: none; }
+.log-item {
+  background: var(--card); border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: 14px 16px;
+  margin-bottom: 12px; cursor: pointer;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  transition: box-shadow .2s, transform .15s;
+}
+.log-item:hover { box-shadow: var(--shadow-lg); transform: translateX(3px); }
+.log-item-date { font-weight: 700; font-size: 0.92rem; margin-bottom: 5px; }
+.log-item-meta { font-size: 0.78rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 10px; font-family: var(--font-mono); }
+
+/* ============================================================
+   ダッシュボードグリッド (分析タブ)
+============================================================ */
+.dash-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.dash-grid .col-full { grid-column: 1 / -1; }
+
+@media (max-width: 600px) {
+  .dash-grid { grid-template-columns: 1fr; }
+  .dash-grid .col-full { grid-column: 1; }
+}
+
+/* KPIカード */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 0;
+}
+.kpi-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  box-shadow: var(--shadow);
+  display: flex; align-items: center; gap: 12px;
+}
+.kpi-icon {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem; flex-shrink: 0;
+}
+.kpi-icon.violet { background: #ebebff; }
+.kpi-icon.rose   { background: #fff0f5; }
+.kpi-icon.green  { background: #f0fff8; }
+.kpi-icon.amber  { background: #fff8f0; }
+.kpi-label { font-size: 0.72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; }
+.kpi-val   { font-size: 1.2rem; font-weight: 800; font-family: var(--font-mono); color: var(--ink); margin-top: 2px; }
+
+/* ============================================================
+   カレンダー
+============================================================ */
+.cal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.cal-title { font-weight: 700; font-size: 1rem; }
+.cal-nav {
+  display: flex; gap: 6px;
+}
+.cal-nav button {
+  width: 30px; height: 30px; border-radius: 50%;
+  border: 1.5px solid var(--border);
+  background: var(--bg); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.85rem; color: var(--ink-3);
+  transition: all .18s;
+}
+.cal-nav button:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+.cal-dow {
+  text-align: center; font-size: 0.7rem; font-weight: 700;
+  color: var(--muted); text-transform: uppercase;
+  padding: 4px 0 6px; letter-spacing: .05em;
+}
+.cal-dow:first-child { color: #e05d8c; }
+.cal-dow:last-child  { color: var(--accent); }
+
+.cal-day {
+  aspect-ratio: 1;
+  border-radius: var(--radius-s);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  font-size: 0.8rem; font-weight: 600;
+  cursor: pointer; transition: all .15s;
+  position: relative; gap: 2px;
+  border: 1.5px solid transparent;
+}
+.cal-day:hover  { background: #ebebff; border-color: var(--accent); color: var(--accent); }
+.cal-day.other  { color: var(--muted); opacity: .4; cursor: default; }
+.cal-day.other:hover { background: none; border-color: transparent; color: var(--muted); }
+.cal-day.today  { background: var(--ink); color: #fff; border-color: var(--ink); }
+.cal-day.today:hover { background: var(--ink-2); }
+.cal-day.selected { background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 0 4px 12px rgba(91,91,214,.35); }
+.cal-day.has-data .dot-mark {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--accent-2);
+  flex-shrink: 0;
+}
+.cal-day.today.has-data .dot-mark,
+.cal-day.selected.has-data .dot-mark { background: rgba(255,255,255,.8); }
+
+/* ============================================================
+   選択日サマリー
+============================================================ */
+.day-summary-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 10px; margin-top: 10px;
+}
+.day-stat {
+  background: var(--bg); border-radius: var(--radius-s);
+  padding: 10px 12px; text-align: center;
+  border: 1px solid var(--border);
+}
+.day-stat .s-label { font-size: 0.68rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; }
+.day-stat .s-val   { font-size: 1rem; font-weight: 800; font-family: var(--font-mono); margin-top: 3px; color: var(--ink); }
+
+/* ============================================================
+   グラフコンテナ
+============================================================ */
+.chart-wrap {
+  position: relative;
+  height: 200px;
+}
+
+/* ============================================================
+   期間切り替えトグル
+============================================================ */
+.range-toggle {
+  display: flex; gap: 4px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 3px;
+  width: fit-content; margin-bottom: 14px;
+}
+.range-btn {
+  padding: 5px 14px; border-radius: 6px;
+  border: none; background: transparent;
+  font-family: var(--font-body); font-size: 0.78rem;
+  font-weight: 600; color: var(--muted); cursor: pointer; transition: all .18s;
+}
+.range-btn.active { background: var(--card); color: var(--accent); box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+
+/* ============================================================
+   トースト
+============================================================ */
+#toast {
+  position: fixed; bottom: 24px; left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--ink); color: #fff;
+  padding: 10px 22px; border-radius: 30px;
+  font-size: 0.86rem; font-weight: 600; z-index: 9999;
+  transition: transform .3s cubic-bezier(.4,0,.2,1);
+  white-space: nowrap; pointer-events: none;
+  box-shadow: 0 4px 20px rgba(26,26,46,.3);
+}
+#toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ============================================================
+   empty state
+============================================================ */
+.empty {
+  text-align: center; padding: 36px 20px;
+  color: var(--muted); font-size: 0.88rem;
+}
+.empty .icon { font-size: 2.4rem; margin-bottom: 8px; }
+
+/* ============================================================
+   スクロールバー
+============================================================ */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ============================================================
+   レスポンシブ調整
+============================================================ */
+@media (max-width: 480px) {
+  .money-summary { flex-wrap: wrap; }
+  .money-box { min-width: calc(50% - 5px); }
+  .kpi-grid  { grid-template-columns: repeat(2, 1fr); }
+  .day-summary-grid { grid-template-columns: repeat(3, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<!-- ========== ヘッダー ========== -->
+<header>
+  <div class="header-logo">
+    <div class="dot"></div>
+    ライフログ
+  </div>
+  <div class="header-date" id="header-date"></div>
+</header>
+
+<!-- ========== タブナビゲーション ========== -->
+<nav class="tabs">
+  <button class="tab-btn active" data-tab="record">✏️ 記録</button>
+  <button class="tab-btn" data-tab="calendar">📅 カレンダー</button>
+  <button class="tab-btn" data-tab="analytics">📊 分析</button>
+  <button class="tab-btn" data-tab="history">🗂 履歴</button>
+</nav>
+
+<main>
+
+  <!-- =========================================
+       パネル① 記録タブ
+  ========================================= -->
+  <section class="panel active" id="tab-record">
+
+    <!-- 日付バー -->
+    <div class="date-bar">
+      <input type="date" id="date-input" />
+      <button class="btn btn-outline btn-sm" id="btn-today">今日</button>
+    </div>
+
+    <!-- タスク入力 -->
+    <div class="card">
+      <div class="card-title">タスク</div>
+      <div class="form-group">
+        <label>タイトル</label>
+        <input type="text" id="task-title" placeholder="例：MTG、ランニング" />
+      </div>
+      <div class="row">
+        <div class="form-group">
+          <label>開始時間</label>
+          <input type="time" id="task-start" />
+        </div>
+        <div class="form-group">
+          <label>終了時間</label>
+          <input type="time" id="task-end" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>カテゴリ</label>
+        <select id="task-category">
+          <option value="work">💼 仕事</option>
+          <option value="private">🏠 プライベート</option>
+          <option value="health">🏃 健康</option>
+          <option value="other">📦 その他</option>
+        </select>
+      </div>
+      <button class="btn btn-outline btn-sm" id="btn-add-task">＋ タスク追加</button>
+      <ul class="task-list" id="task-list"></ul>
+    </div>
+
+    <!-- 睡眠入力 -->
+    <div class="card">
+      <div class="card-title">睡眠時間</div>
+      <div class="row">
+        <div class="form-group">
+          <label>就寝時間</label>
+          <input type="time" id="sleep-start" />
+        </div>
+        <div class="form-group">
+          <label>起床時間</label>
+          <input type="time" id="sleep-end" />
+        </div>
+      </div>
+      <div class="sleep-summary" id="sleep-summary" style="display:none">
+        🌙 <span id="sleep-calc"></span>
+      </div>
+    </div>
+
+    <!-- 収支入力 -->
+    <div class="card">
+      <div class="card-title">収支</div>
+      <div class="row">
+        <div class="form-group">
+          <label>収入（円）</label>
+          <input type="number" id="money-income" placeholder="0" min="0" />
+        </div>
+        <div class="form-group">
+          <label>支出（円）</label>
+          <input type="number" id="money-expense" placeholder="0" min="0" />
+        </div>
+      </div>
+      <div class="money-summary">
+        <div class="money-box income">
+          <div class="lbl">収入</div>
+          <div class="amt" id="sum-income">¥0</div>
+        </div>
+        <div class="money-box expense">
+          <div class="lbl">支出</div>
+          <div class="amt" id="sum-expense">¥0</div>
+        </div>
+        <div class="money-box balance">
+          <div class="lbl">収支</div>
+          <div class="amt" id="sum-balance">¥0</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary btn-full" id="btn-save">💾 この日のデータを保存</button>
+  </section>
+
+  <!-- =========================================
+       パネル② カレンダータブ
+  ========================================= -->
+  <section class="panel" id="tab-calendar">
+
+    <!-- カレンダー本体 -->
+    <div class="card">
+      <div class="cal-header">
+        <div class="cal-title" id="cal-title">2025年1月</div>
+        <div class="cal-nav">
+          <button id="cal-prev">◀</button>
+          <button id="cal-today-btn">今</button>
+          <button id="cal-next">▶</button>
+        </div>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+    </div>
+
+    <!-- 選択日サマリー -->
+    <div class="card" id="cal-day-detail">
+      <div class="card-title" id="cal-detail-title">日付を選択してください</div>
+      <div id="cal-detail-body">
+        <div class="empty"><div class="icon">📅</div>カレンダーの日付をタップしてください</div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- =========================================
+       パネル③ 分析タブ
+  ========================================= -->
+  <section class="panel" id="tab-analytics">
+
+    <!-- 期間切り替え -->
+    <div class="range-toggle">
+      <button class="range-btn active" data-range="week">1週間</button>
+      <button class="range-btn" data-range="month">1ヶ月</button>
+    </div>
+
+    <!-- KPI サマリー -->
+    <div class="kpi-grid" style="margin-bottom:16px">
+      <div class="kpi-card">
+        <div class="kpi-icon violet">⏱</div>
+        <div>
+          <div class="kpi-label">総タスク時間</div>
+          <div class="kpi-val" id="kpi-task">—</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon rose">😴</div>
+        <div>
+          <div class="kpi-label">平均睡眠</div>
+          <div class="kpi-val" id="kpi-sleep">—</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon green">💹</div>
+        <div>
+          <div class="kpi-label">総収入</div>
+          <div class="kpi-val" id="kpi-income">—</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon amber">💸</div>
+        <div>
+          <div class="kpi-label">総支出</div>
+          <div class="kpi-val" id="kpi-expense">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- グラフ：タスク時間推移（折れ線） -->
+    <div class="card">
+      <div class="card-title">タスク時間推移（時間）</div>
+      <div class="chart-wrap">
+        <canvas id="chart-task"></canvas>
+      </div>
+    </div>
+
+    <!-- グラフ：支出推移（棒） -->
+    <div class="card">
+      <div class="card-title">収支推移（円）</div>
+      <div class="chart-wrap">
+        <canvas id="chart-money"></canvas>
+      </div>
+    </div>
+
+    <!-- グラフ：睡眠推移（折れ線） -->
+    <div class="card">
+      <div class="card-title">睡眠時間推移（時間）</div>
+      <div class="chart-wrap">
+        <canvas id="chart-sleep"></canvas>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- =========================================
+       パネル④ 履歴タブ
+  ========================================= -->
+  <section class="panel" id="tab-history">
+    <div class="card" style="padding:12px 16px; margin-bottom:16px;">
+      <div style="display:flex; align-items:center; justify-content:space-between;">
+        <div class="card-title" style="margin:0">記録一覧</div>
+        <button class="btn btn-danger btn-sm" id="btn-clear-all">全削除</button>
+      </div>
+    </div>
+    <ul class="log-list" id="log-list"></ul>
+  </section>
+
+</main>
+
+<!-- トースト -->
+<div id="toast"></div>
+
+
+<script>
+/* ==========================================================
+   ライフログ v2 — メインスクリプト
+   ① 記録  ② カレンダー  ③ 分析（Chart.js）  ④ 履歴
+========================================================== */
+
+// ----------------------------------------------------------
+// 定数・グローバル変数
+// ----------------------------------------------------------
+const STORAGE_KEY = 'lifelog_data';
+let tasks = [];                  // 記録タブの一時タスク配列
+let calYear, calMonth;           // カレンダーの表示年月
+let calSelectedDate = null;      // カレンダーで選択された日付
+let currentRange = 'week';       // 分析タブの集計期間
+let chartTask, chartMoney, chartSleep; // Chart.js インスタンス
+
+// ----------------------------------------------------------
+// ユーティリティ
+// ----------------------------------------------------------
+
+/** localStorage から全データを取得 */
+function loadAllData() {
+  return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+}
+
+/** localStorage に全データを保存 */
+function saveAllData(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+/** 今日の日付を YYYY-MM-DD で返す */
+function todayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/** YYYY-MM-DD → 日本語表記 */
+function formatDateJP(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  const days = ['日','月','火','水','木','金','土'];
+  return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${days[d.getDay()]}）`;
+}
+
+/** 数値を通貨表示 */
+function formatMoney(n) {
+  return '¥' + Number(n || 0).toLocaleString();
+}
+
+/** HH:MM の差分を分数で返す（日またぎ対応） */
+function timeDiffMin(start, end) {
+  if (!start || !end) return 0;
+  const [sh, sm] = start.split(':').map(Number);
+  const [eh, em] = end.split(':').map(Number);
+  let d = (eh * 60 + em) - (sh * 60 + sm);
+  if (d <= 0) d += 1440;
+  return d;
+}
+
+/** 分 → "X時間Y分" 表示 */
+function minsToLabel(mins) {
+  if (!mins) return '0分';
+  const h = Math.floor(mins / 60), m = mins % 60;
+  return h > 0 ? (m > 0 ? `${h}h${m}m` : `${h}h`) : `${m}m`;
+}
+
+/** 分 → 小数時間 */
+function minsToHours(mins) {
+  return Math.round(mins / 6) / 10; // 小数1桁
+}
+
+/** カテゴリ表示マップ */
+const CAT_MAP = {
+  work:    { label: '💼 仕事',      cls: 'cat-work' },
+  private: { label: '🏠 プライベート', cls: 'cat-private' },
+  health:  { label: '🏃 健康',      cls: 'cat-health' },
+  other:   { label: '📦 その他',    cls: 'cat-other' },
+};
+
+/** XSS 対策エスケープ */
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c =>
+    ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+/** トースト通知 */
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ----------------------------------------------------------
+// ヘッダー日付を更新
+// ----------------------------------------------------------
+function updateHeaderDate() {
+  const now = new Date();
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  document.getElementById('header-date').textContent =
+    `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} ${days[now.getDay()]}`;
+}
+updateHeaderDate();
+
+// ----------------------------------------------------------
+// タブ切り替え
+// ----------------------------------------------------------
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+
+    // タブ固有の初期化
+    if (btn.dataset.tab === 'calendar') renderCalendar();
+    if (btn.dataset.tab === 'analytics') renderAnalytics();
+    if (btn.dataset.tab === 'history')   renderHistory();
+  });
+});
+
+// ----------------------------------------------------------
+// 記録タブ：日付選択
+// ----------------------------------------------------------
+const dateInput = document.getElementById('date-input');
+dateInput.addEventListener('change', () => loadDayData(dateInput.value));
+document.getElementById('btn-today').addEventListener('click', () => {
+  dateInput.value = todayStr();
+  loadDayData(dateInput.value);
+});
+dateInput.value = todayStr();
+
+/** 指定日のデータをフォームに読み込む */
+function loadDayData(dateStr) {
+  const all = loadAllData();
+  const day = all[dateStr] || {};
+  tasks = day.tasks ? [...day.tasks] : [];
+  renderTaskList();
+  document.getElementById('sleep-start').value = day.sleep?.start || '';
+  document.getElementById('sleep-end').value   = day.sleep?.end   || '';
+  document.getElementById('money-income').value  = day.money?.income  || '';
+  document.getElementById('money-expense').value = day.money?.expense || '';
+  updateSleepSummary();
+  updateMoneySummary();
+}
+loadDayData(todayStr());
+
+// ----------------------------------------------------------
+// タスク追加・レンダリング
+// ----------------------------------------------------------
+document.getElementById('btn-add-task').addEventListener('click', () => {
+  const title = document.getElementById('task-title').value.trim();
+  if (!title) { showToast('タイトルを入力してください'); return; }
+  tasks.push({
+    title,
+    start:    document.getElementById('task-start').value,
+    end:      document.getElementById('task-end').value,
+    category: document.getElementById('task-category').value,
+  });
+  document.getElementById('task-title').value = '';
+  document.getElementById('task-start').value = '';
+  document.getElementById('task-end').value   = '';
+  renderTaskList();
+});
+
+function renderTaskList() {
+  const ul = document.getElementById('task-list');
+  ul.innerHTML = '';
+  if (!tasks.length) {
+    ul.innerHTML = '<li style="color:var(--muted);font-size:.84rem;padding:8px 0">タスクなし</li>';
+    return;
+  }
+  tasks.forEach((t, i) => {
+    const cat = CAT_MAP[t.category] || CAT_MAP.other;
+    const timeStr = (t.start && t.end) ? `${t.start} ～ ${t.end}` : (t.start || t.end || '');
+    const li = document.createElement('li');
+    li.className = 'task-item';
+    li.innerHTML = `
+      <span class="task-badge ${cat.cls}">${cat.label}</span>
+      <div class="task-info">
+        <div class="task-title">${esc(t.title)}</div>
+        ${timeStr ? `<div class="task-time">⏰ ${timeStr}</div>` : ''}
+      </div>
+      <button class="task-del" data-idx="${i}">✕</button>`;
+    ul.appendChild(li);
+  });
+  ul.querySelectorAll('.task-del').forEach(b =>
+    b.addEventListener('click', e => {
+      tasks.splice(Number(e.currentTarget.dataset.idx), 1);
+      renderTaskList();
+    })
+  );
+}
+
+// ----------------------------------------------------------
+// 睡眠サマリー
+// ----------------------------------------------------------
+function updateSleepSummary() {
+  const s = document.getElementById('sleep-start').value;
+  const e = document.getElementById('sleep-end').value;
+  const mins = timeDiffMin(s, e);
+  const el = document.getElementById('sleep-summary');
+  if (mins > 0) {
+    document.getElementById('sleep-calc').textContent = `睡眠時間：${minsToLabel(mins)}`;
+    el.style.display = 'flex';
+  } else {
+    el.style.display = 'none';
+  }
+}
+document.getElementById('sleep-start').addEventListener('change', updateSleepSummary);
+document.getElementById('sleep-end').addEventListener('change', updateSleepSummary);
+
+// ----------------------------------------------------------
+// 収支サマリー
+// ----------------------------------------------------------
+function updateMoneySummary() {
+  const inc = Number(document.getElementById('money-income').value)  || 0;
+  const exp = Number(document.getElementById('money-expense').value) || 0;
+  document.getElementById('sum-income').textContent  = formatMoney(inc);
+  document.getElementById('sum-expense').textContent = formatMoney(exp);
+  document.getElementById('sum-balance').textContent = formatMoney(inc - exp);
+}
+document.getElementById('money-income').addEventListener('input', updateMoneySummary);
+document.getElementById('money-expense').addEventListener('input', updateMoneySummary);
+
+// ----------------------------------------------------------
+// 保存処理
+// ----------------------------------------------------------
+document.getElementById('btn-save').addEventListener('click', () => {
+  const dateStr = dateInput.value;
+  if (!dateStr) { showToast('日付を選択してください'); return; }
+  const dayData = {
+    date: dateStr,
+    tasks: [...tasks],
+    sleep: {
+      start: document.getElementById('sleep-start').value,
+      end:   document.getElementById('sleep-end').value,
+    },
+    money: {
+      income:  Number(document.getElementById('money-income').value)  || 0,
+      expense: Number(document.getElementById('money-expense').value) || 0,
+    }
+  };
+  const all = loadAllData();
+  all[dateStr] = dayData;
+  saveAllData(all);
+  showToast('✅ 保存しました！');
+});
+
+// ==========================================================
+// カレンダータブ
+// ==========================================================
+
+/** カレンダー初期化（今月） */
+function initCalendar() {
+  const now = new Date();
+  calYear  = now.getFullYear();
+  calMonth = now.getMonth();
+}
+initCalendar();
+
+document.getElementById('cal-prev').addEventListener('click', () => {
+  calMonth--;
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  renderCalendar();
+});
+document.getElementById('cal-next').addEventListener('click', () => {
+  calMonth++;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  renderCalendar();
+});
+document.getElementById('cal-today-btn').addEventListener('click', () => {
+  const now = new Date();
+  calYear  = now.getFullYear();
+  calMonth = now.getMonth();
+  renderCalendar();
+});
+
+/** カレンダーを描画する */
+function renderCalendar() {
+  const all = loadAllData();
+  const today = todayStr();
+
+  // タイトル
+  const monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  document.getElementById('cal-title').textContent = `${calYear}年 ${monthNames[calMonth]}`;
+
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+
+  // 曜日ヘッダー
+  ['日','月','火','水','木','金','土'].forEach(d => {
+    const el = document.createElement('div');
+    el.className = 'cal-dow';
+    el.textContent = d;
+    grid.appendChild(el);
+  });
+
+  // 月の初日の曜日と末日
+  const firstDay  = new Date(calYear, calMonth, 1).getDay();
+  const lastDate  = new Date(calYear, calMonth + 1, 0).getDate();
+  const prevLast  = new Date(calYear, calMonth, 0).getDate();
+
+  // 前月の空白セル
+  for (let i = 0; i < firstDay; i++) {
+    const el = document.createElement('div');
+    el.className = 'cal-day other';
+    el.textContent = prevLast - firstDay + 1 + i;
+    grid.appendChild(el);
+  }
+
+  // 当月のセル
+  for (let d = 1; d <= lastDate; d++) {
+    const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const el = document.createElement('div');
+    el.className = 'cal-day';
+
+    const numSpan = document.createElement('span');
+    numSpan.textContent = d;
+    el.appendChild(numSpan);
+
+    // データあり → ドットマーク
+    if (all[dateStr]) {
+      el.classList.add('has-data');
+      const dot = document.createElement('div');
+      dot.className = 'dot-mark';
+      el.appendChild(dot);
+    }
+
+    // 今日
+    if (dateStr === today) el.classList.add('today');
+
+    // 選択中
+    if (dateStr === calSelectedDate) el.classList.add('selected');
+
+    // クリックでサマリー表示
+    el.addEventListener('click', () => {
+      calSelectedDate = dateStr;
+      renderCalendar();          // 選択状態を反映
+      renderCalDayDetail(dateStr);
+    });
+
+    grid.appendChild(el);
+  }
+
+  // 翌月の空白セル（6行 × 7 = 42 マス埋め）
+  const total = firstDay + lastDate;
+  const remain = total % 7 === 0 ? 0 : 7 - (total % 7);
+  for (let i = 1; i <= remain; i++) {
+    const el = document.createElement('div');
+    el.className = 'cal-day other';
+    el.textContent = i;
+    grid.appendChild(el);
+  }
+}
+
+/** 選択した日のサマリーを描画する */
+function renderCalDayDetail(dateStr) {
+  const all = loadAllData();
+  const day = all[dateStr];
+  document.getElementById('cal-detail-title').textContent = formatDateJP(dateStr);
+
+  const body = document.getElementById('cal-detail-body');
+
+  if (!day) {
+    body.innerHTML = '<div class="empty"><div class="icon">📭</div>この日のデータはありません</div>';
+    return;
+  }
+
+  // タスク総時間を計算
+  let totalTaskMins = 0;
+  (day.tasks || []).forEach(t => { totalTaskMins += timeDiffMin(t.start, t.end); });
+
+  // 睡眠時間
+  const sleepMins = timeDiffMin(day.sleep?.start, day.sleep?.end);
+
+  // 収支
+  const inc = day.money?.income  || 0;
+  const exp = day.money?.expense || 0;
+
+  body.innerHTML = `
+    <div class="day-summary-grid">
+      <div class="day-stat">
+        <div class="s-label">⏱ タスク</div>
+        <div class="s-val">${minsToLabel(totalTaskMins)}</div>
+      </div>
+      <div class="day-stat">
+        <div class="s-label">😴 睡眠</div>
+        <div class="s-val">${minsToLabel(sleepMins)}</div>
+      </div>
+      <div class="day-stat">
+        <div class="s-label">💰 収支</div>
+        <div class="s-val" style="color:${inc-exp>=0?'var(--accent-3)':'var(--accent-2)'}">${formatMoney(inc-exp)}</div>
+      </div>
+    </div>
+    ${day.tasks?.length ? `
+    <div style="margin-top:12px">
+      <div class="card-title" style="margin-bottom:8px">タスク一覧</div>
+      <ul class="task-list">
+        ${day.tasks.map(t => {
+          const cat = CAT_MAP[t.category] || CAT_MAP.other;
+          const time = (t.start && t.end) ? `${t.start}～${t.end}` : '';
+          return `<li class="task-item" style="padding:8px 0">
+            <span class="task-badge ${cat.cls}">${cat.label}</span>
+            <div class="task-info">
+              <div class="task-title">${esc(t.title)}</div>
+              ${time ? `<div class="task-time">⏰ ${time}</div>` : ''}
+            </div>
+          </li>`;
+        }).join('')}
+      </ul>
+    </div>` : ''}
+  `;
+}
+
+// ==========================================================
+// 分析タブ
+// ==========================================================
+
+/** 期間切り替えボタン */
+document.querySelectorAll('.range-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentRange = btn.dataset.range;
+    renderAnalytics();
+  });
+});
+
+/**
+ * 直近 N 日分の日付リストを返す（新しい順）
+ * @param {number} n - 日数
+ * @returns {string[]} YYYY-MM-DD の配列
+ */
+function getDateRange(n) {
+  const dates = [];
+  const now = new Date();
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    dates.push(d.toISOString().slice(0, 10));
+  }
+  return dates;
+}
+
+/**
+ * 日付リストからチャート用データを集計する
+ * @param {string[]} dates
+ * @returns {{ labels, taskHours, incomes, expenses, sleepHours }}
+ */
+function aggregateData(dates) {
+  const all = loadAllData();
+  const labels     = [];
+  const taskHours  = [];
+  const incomes    = [];
+  const expenses   = [];
+  const sleepHours = [];
+
+  dates.forEach(d => {
+    const day = all[d] || {};
+    const md  = d.slice(5); // MM-DD
+
+    // ラベル：週は曜日付き、月は日付のみ
+    const dt   = new Date(d + 'T00:00:00');
+    const dows = ['日','月','火','水','木','金','土'];
+    labels.push(`${md}(${dows[dt.getDay()]})`);
+
+    // タスク総時間（分 → 時間）
+    let tMin = 0;
+    (day.tasks || []).forEach(t => { tMin += timeDiffMin(t.start, t.end); });
+    taskHours.push(minsToHours(tMin));
+
+    // 収支
+    incomes.push(day.money?.income  || 0);
+    expenses.push(day.money?.expense || 0);
+
+    // 睡眠
+    const sMins = timeDiffMin(day.sleep?.start, day.sleep?.end);
+    sleepHours.push(minsToHours(sMins));
+  });
+
+  return { labels, taskHours, incomes, expenses, sleepHours };
+}
+
+/** KPI カードを更新する */
+function updateKPIs(dates) {
+  const all = loadAllData();
+  let totalTaskMins = 0, totalSleepMins = 0, sleepDays = 0;
+  let totalIncome = 0, totalExpense = 0;
+
+  dates.forEach(d => {
+    const day = all[d] || {};
+    (day.tasks || []).forEach(t => { totalTaskMins += timeDiffMin(t.start, t.end); });
+    const sm = timeDiffMin(day.sleep?.start, day.sleep?.end);
+    if (sm > 0) { totalSleepMins += sm; sleepDays++; }
+    totalIncome  += day.money?.income  || 0;
+    totalExpense += day.money?.expense || 0;
+  });
+
+  const avgSleep = sleepDays > 0 ? Math.round(totalSleepMins / sleepDays) : 0;
+
+  document.getElementById('kpi-task').textContent    = minsToLabel(totalTaskMins);
+  document.getElementById('kpi-sleep').textContent   = avgSleep ? minsToLabel(avgSleep) : '—';
+  document.getElementById('kpi-income').textContent  = formatMoney(totalIncome);
+  document.getElementById('kpi-expense').textContent = formatMoney(totalExpense);
+}
+
+/**
+ * Chart.js の共通デフォルト設定
+ * 毎回新しいチャートを作るとキャンバスが残るので、
+ * 既存インスタンスを destroy() してから再生成する
+ */
+const CHART_DEFAULTS = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      backgroundColor: '#1a1a2e',
+      titleFont: { family: "'DM Mono', monospace", size: 11 },
+      bodyFont:  { family: "'DM Mono', monospace", size: 12 },
+      padding: 10,
+      cornerRadius: 8,
+    },
+  },
+  scales: {
+    x: {
+      grid: { color: '#e4e4f0', drawTicks: false },
+      ticks: { font: { family: "'DM Mono', monospace", size: 10 }, color: '#8888aa' },
+    },
+    y: {
+      grid: { color: '#e4e4f0', drawTicks: false },
+      ticks: { font: { family: "'DM Mono', monospace", size: 10 }, color: '#8888aa' },
+    },
+  },
+};
+
+/** タスク時間折れ線グラフを生成・更新 */
+function renderChartTask(labels, data) {
+  if (chartTask) chartTask.destroy();
+  const ctx = document.getElementById('chart-task').getContext('2d');
+  chartTask = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'タスク時間(h)',
+        data,
+        borderColor: '#5b5bd6',
+        backgroundColor: 'rgba(91,91,214,.08)',
+        fill: true,
+        tension: 0.4,
+        pointBackgroundColor: '#5b5bd6',
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        borderWidth: 2.5,
+      }]
+    },
+    options: {
+      ...CHART_DEFAULTS,
+      scales: {
+        ...CHART_DEFAULTS.scales,
+        y: { ...CHART_DEFAULTS.scales.y, beginAtZero: true,
+             title: { display: true, text: '時間(h)', color:'#8888aa', font:{size:10} } }
+      }
+    }
+  });
+}
+
+/** 収支棒グラフを生成・更新 */
+function renderChartMoney(labels, incomes, expenses) {
+  if (chartMoney) chartMoney.destroy();
+  const ctx = document.getElementById('chart-money').getContext('2d');
+  chartMoney = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: '収入',
+          data: incomes,
+          backgroundColor: 'rgba(39,174,122,.65)',
+          borderColor: '#27ae7a',
+          borderWidth: 1.5,
+          borderRadius: 5,
+        },
+        {
+          label: '支出',
+          data: expenses,
+          backgroundColor: 'rgba(224,93,140,.65)',
+          borderColor: '#e05d8c',
+          borderWidth: 1.5,
+          borderRadius: 5,
+        }
+      ]
+    },
+    options: {
+      ...CHART_DEFAULTS,
+      plugins: {
+        ...CHART_DEFAULTS.plugins,
+        legend: {
+          display: true,
+          labels: {
+            font: { family: "'DM Sans', sans-serif", size: 11 },
+            color: '#4a4a6a', boxWidth: 12, boxHeight: 12,
+          }
+        }
+      },
+      scales: {
+        ...CHART_DEFAULTS.scales,
+        y: { ...CHART_DEFAULTS.scales.y, beginAtZero: true,
+             title: { display: true, text: '円', color:'#8888aa', font:{size:10} } }
+      }
+    }
+  });
+}
+
+/** 睡眠折れ線グラフを生成・更新 */
+function renderChartSleep(labels, data) {
+  if (chartSleep) chartSleep.destroy();
+  const ctx = document.getElementById('chart-sleep').getContext('2d');
+  chartSleep = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: '睡眠時間(h)',
+        data,
+        borderColor: '#805ad5',
+        backgroundColor: 'rgba(128,90,213,.08)',
+        fill: true,
+        tension: 0.4,
+        pointBackgroundColor: '#805ad5',
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        borderWidth: 2.5,
+      }]
+    },
+    options: {
+      ...CHART_DEFAULTS,
+      scales: {
+        ...CHART_DEFAULTS.scales,
+        y: { ...CHART_DEFAULTS.scales.y, beginAtZero: true, max: 12,
+             title: { display: true, text: '時間(h)', color:'#8888aa', font:{size:10} } }
+      }
+    }
+  });
+}
+
+/** 分析タブ全体を描画する */
+function renderAnalytics() {
+  const n     = currentRange === 'week' ? 7 : 30;
+  const dates = getDateRange(n);
+  const { labels, taskHours, incomes, expenses, sleepHours } = aggregateData(dates);
+
+  updateKPIs(dates);
+  renderChartTask(labels, taskHours);
+  renderChartMoney(labels, incomes, expenses);
+  renderChartSleep(labels, sleepHours);
+}
+
+// ==========================================================
+// 履歴タブ
+// ==========================================================
+function renderHistory() {
+  const all  = loadAllData();
+  const ul   = document.getElementById('log-list');
+  ul.innerHTML = '';
+  const keys = Object.keys(all).sort((a, b) => b.localeCompare(a));
+  if (!keys.length) {
+    ul.innerHTML = '<div class="empty"><div class="icon">📭</div>まだ記録がありません</div>';
+    return;
+  }
+  keys.forEach(k => {
+    const d = all[k];
+    let taskMins = 0;
+    (d.tasks || []).forEach(t => { taskMins += timeDiffMin(t.start, t.end); });
+    const sleepMins = timeDiffMin(d.sleep?.start, d.sleep?.end);
+    const balance   = (d.money?.income || 0) - (d.money?.expense || 0);
+    const li = document.createElement('li');
+    li.className = 'log-item';
+    li.innerHTML = `
+      <div class="log-item-date">📅 ${formatDateJP(k)}</div>
+      <div class="log-item-meta">
+        <span>📌 ${d.tasks?.length || 0}件 (${minsToLabel(taskMins)})</span>
+        <span>😴 ${minsToLabel(sleepMins) || '—'}</span>
+        <span style="color:${balance>=0?'var(--accent-3)':'var(--accent-2)'}">
+          💰 ${formatMoney(balance)}
+        </span>
+      </div>`;
+    // クリックで記録タブへ
+    li.addEventListener('click', () => {
+      dateInput.value = k;
+      loadDayData(k);
+      document.querySelector('[data-tab="record"]').click();
+    });
+    ul.appendChild(li);
+  });
+}
+
+document.getElementById('btn-clear-all').addEventListener('click', () => {
+  if (!confirm('すべての記録を削除しますか？この操作は取り消せません。')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  renderHistory();
+  showToast('🗑️ 全データを削除しました');
+});
+
+</script>
+</body>
+</html>
