@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>上野 飲み屋マップ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+/* Layout: schematic area map on the left (sticky on desktop), shop cards on the right; stacks on phones. */
+:root {
+  --bg: #eef0ec;
+  --paper: #fbfbf8;
+  --ink: #1f2a2c;
+  --muted: #5d6a69;
+  --line: #d5d9d2;
+  --road: #ffffff;
+  --park: #cfe3c4;
+  --pond: #b9d4e3;
+  --rail: #6e9f3c;
+  --amayoko: #f1dfb8;
+  --private: #2f5aa8;   /* 個室・コース */
+  --casual: #cc3b2b;    /* 大衆酒場 */
+  --focus: #e0a100;
+  --display: "Dela Gothic One", "Hiragino Sans", "Yu Gothic", sans-serif;
+  --body: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161c1e; --paper: #1f2729; --ink: #e7ece9; --muted: #9aa8a6; --line: #34403f;
+    --road: #2c3638; --park: #2b4130; --pond: #24414f; --rail: #8cc152; --amayoko: #4a3f27;
+    --private: #7fa3ea; --casual: #f07a68; --focus: #f2c14e; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #161c1e; --paper: #1f2729; --ink: #e7ece9; --muted: #9aa8a6; --line: #34403f;
+  --road: #2c3638; --park: #2b4130; --pond: #24414f; --rail: #8cc152; --amayoko: #4a3f27;
+  --private: #7fa3ea; --casual: #f07a68; --focus: #f2c14e; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.6; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-inline: 16px; padding-block: 28px 48px; }
+header h1 { font-family: var(--display); font-weight: 400; font-size: clamp(1.7rem, 4vw, 2.4rem); line-height: 1.2; margin: 0; text-wrap: balance; }
+header p { margin: 6px 0 0; color: var(--muted); max-width: 60ch; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 20px; }
+.chip { font: inherit; font-size: 13px; font-weight: 700; border: 1.5px solid var(--line); background: var(--paper); color: var(--ink); border-radius: 999px; padding: 6px 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.chip[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: var(--paper); }
+.chip:focus-visible, .card:focus-visible, a:focus-visible, .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.dot.private { background: var(--private); } .dot.casual { background: var(--casual); }
+
+.grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 820px) { .grid { grid-template-columns: 1fr; } }
+.mapbox { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+@media (max-width: 820px) { .mapbox { position: static; } }
+.mapframe { position: relative; width: 100%; aspect-ratio: 4 / 5; max-width: 100%; border-radius: 6px; overflow: hidden; background: var(--bg); }
+.mapframe iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+@media (max-width: 820px) { .mapframe { aspect-ratio: 4 / 3; } }
+button.btn { font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; background: transparent; }
+button.btn.primary { background: var(--ink); color: var(--paper); }
+.mapnote { font-size: 12px; color: var(--muted); margin: 6px 4px 0; }
+.mapbox .gm { display: block; margin: 10px 4px 2px; font-weight: 700; color: var(--ink); }
+
+
+.list { display: grid; gap: 14px; min-width: 0; }
+.card { background: var(--paper); border: 1.5px solid var(--line); border-radius: 10px; padding: 16px 18px; display: grid; gap: 8px; cursor: pointer; }
+.card.active { border-color: var(--focus); }
+.card[hidden] { display: none !important; }
+.card-top { display: flex; align-items: center; gap: 12px; }
+.num { flex: none; width: 30px; height: 30px; border-radius: 50%; color: #fff; display: grid; place-items: center; font-weight: 700; }
+.card.private .num { background: var(--private); } .card.casual .num { background: var(--casual); }
+.card h2 { font-size: 1.08rem; margin: 0; line-height: 1.35; }
+.tag { font-size: 12px; font-weight: 700; letter-spacing: .04em; }
+.card.private .tag { color: var(--private); } .card.casual .tag { color: var(--casual); }
+.card p { margin: 0; }
+.meta { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; font-size: 13px; color: var(--muted); }
+.meta dt { font-weight: 700; } .meta dd { margin: 0; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 2px; }
+.btn { font-size: 13px; font-weight: 700; text-decoration: none; padding: 7px 12px; border-radius: 6px; border: 1.5px solid var(--ink); color: var(--ink); }
+.btn.primary { background: var(--ink); color: var(--paper); }
+
+.route { margin-top: 28px; background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 18px; }
+.route h2 { font-family: var(--display); font-weight: 400; font-size: 1.25rem; margin: 0 0 8px; }
+.route ul { margin: 0 0 12px; padding-left: 1.2em; }
+footer { margin-top: 24px; font-size: 12px; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>上野 飲み屋マップ</h1>
+    <p>先輩との飲み会の候補6軒です。カードをタップすると上のGoogleマップがその店に切り替わります。ボタンからGoogleマップアプリで場所や道順も開けます。</p>
+  </header>
+
+  <div class="toolbar" role="group" aria-label="絞り込み">
+    <button class="chip" id="f-all" data-filter="all" aria-pressed="true">すべて</button>
+    <button class="chip" id="f-private" data-filter="private" aria-pressed="false"><span class="dot private"></span>個室・コースでゆっくり</button>
+    <button class="chip" id="f-casual" data-filter="casual" aria-pressed="false"><span class="dot casual"></span>大衆酒場でワイワイ</button>
+  </div>
+
+  <div class="grid">
+    <div class="mapbox">
+      <div class="mapframe">
+        <iframe id="gmap" title="Googleマップ" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen
+          src="https://www.google.com/maps?q=%E4%B8%8A%E9%87%8E%E9%A7%85&z=16&output=embed"></iframe>
+      </div>
+      <p class="mapnote" id="map-caption">表示中：上野駅周辺。カードをタップすると、その店の場所に切り替わります。</p>
+      <a class="gm" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=%E4%B8%8A%E9%87%8E%E9%A7%85+%E5%B1%85%E9%85%92%E5%B1%8B">Googleマップアプリで上野駅周辺の居酒屋を見る ↗</a>
+    </div>
+
+    <div class="list" id="list"></div>
+  </div>
+
+  <section class="route">
+    <h2>はしご酒ルート案</h2>
+    <ul>
+      <li><b>0次会</b>：肉の大山の店頭でコロッケとビール（立ち飲み）</li>
+      <li><b>1軒目</b>：大統領でもつ煮と煮込み（歩いてすぐ）</li>
+      <li><b>締め</b>：アメ横を歩いて御徒町の徳ちゃんへ</li>
+    </ul>
+    <div class="actions"><button class="btn primary" id="route-show" type="button">このルートを地図に表示</button><a class="btn" target="_blank" rel="noopener" id="route-link" href="#">Googleマップアプリで開く（徒歩） ↗</a></div>
+  </section>
+
+  <footer>情報は2026年10月時点のネット記事・予約サイトをもとにしています。営業時間・定休日・料金は変わることがあるので、予約前に各店のページで確認してください。</footer>
+</div>
+
+<script>
+const shops = [
+  { id: 1, type: "private", name: "全席個室居酒屋 匠和 上野店", tag: "個室・コース", addr: "台東区上野7-3-2 TSDビル3F", access: "上野駅 浅草口から徒歩1分", point: "串焼きと野菜巻きの店。3時間飲み放題付きコースが3,500円から。", x: 455, y: 185 },
+  { id: 2, type: "private", name: "全席個室 ウメ子の家 上野駅前店", tag: "個室・コース", addr: "台東区上野4-10-5 ヒューリック上野公園前ビル5F受付", access: "上野駅 不忍口から徒歩数分", point: "全席個室。相談事がある時や、改まって話したい時に向いています。", x: 200, y: 185 },
+  { id: 3, type: "private", name: "中国料理 喜羊門 上野店", tag: "個室・コース", addr: "台東区上野2-12-1 セントラル21ビル5F", access: "上野駅・京成上野駅から徒歩5分前後", point: "本場仕込みの羊料理と中華。宴会向きで、ひと味違う店を選びたい時に。", x: 165, y: 330 },
+  { id: 4, type: "casual", name: "大統領 本店", tag: "大衆酒場", addr: "台東区上野6-10-14（アメ横）", access: "上野駅 不忍口から徒歩2分", point: "もつ煮が名物の老舗。上野で飲むならまず名前が挙がる定番店。", x: 352, y: 205 },
+  { id: 5, type: "casual", name: "肉の大山 上野店", tag: "大衆酒場", addr: "台東区上野6-13-2", access: "上野駅から徒歩3分", point: "昭和7年創業の食肉卸が営む店。店頭のコロッケやメンチカツで立ち飲みでき、0次会やはしごに便利。", x: 300, y: 260 },
+  { id: 6, type: "casual", name: "やきとん・浜焼き 徳ちゃん 御徒町店", tag: "大衆酒場", addr: "台東区上野5-20-5（JR高架下）", access: "御徒町駅 南口から徒歩30秒", point: "やきとんと海鮮浜焼きの両方が楽しめる駅近の店。", x: 400, y: 640 }
+];
+const gm = q => "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(q);
+const gmDir = q => "https://www.google.com/maps/dir/?api=1&origin=" + encodeURIComponent("上野駅") + "&destination=" + encodeURIComponent(q) + "&travelmode=walking";
+
+const frame = document.getElementById("gmap");
+const caption = document.getElementById("map-caption");
+const embed = q => "https://www.google.com/maps?q=" + encodeURIComponent(q) + "&z=17&output=embed";
+const list = document.getElementById("list");
+
+shops.forEach(s => {
+  const q = s.name + " " + s.addr.replace(/（.*?）/g, "");
+  s.q = q;
+  // card
+  const c = document.createElement("article");
+  c.className = "card " + s.type;
+  c.id = "shop-" + s.id;
+  c.tabIndex = 0;
+  c.dataset.id = s.id;
+  c.innerHTML = `
+    <div class="card-top"><span class="num">${s.id}</span><div><div class="tag">${s.tag}</div><h2>${s.name}</h2></div></div>
+    <p>${s.point}</p>
+    <dl class="meta"><dt>住所</dt><dd>${s.addr}</dd><dt>アクセス</dt><dd>${s.access}</dd></dl>
+    <div class="actions">
+      <a class="btn primary" target="_blank" rel="noopener" href="${gm(q)}">Googleマップで見る ↗</a>
+      <a class="btn" target="_blank" rel="noopener" href="${gmDir(q)}">上野駅からの道順 ↗</a>
+    </div>`;
+  list.appendChild(c);
+});
+
+function select(id) {
+  const s = shops.find(x => x.id == id);
+  document.querySelectorAll(".card").forEach(el => el.classList.toggle("active", el.dataset.id == id));
+  frame.src = embed(s.q);
+  caption.textContent = "表示中：" + s.id + ". " + s.name;
+  if (matchMedia("(max-width: 820px)").matches) frame.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
+}
+list.addEventListener("click", e => { if (e.target.closest("a")) return; const c = e.target.closest(".card"); if (c) select(c.dataset.id); });
+list.addEventListener("keydown", e => { const c = e.target.closest(".card"); if (c && e.target === c && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); select(c.dataset.id); } });
+
+document.querySelectorAll(".chip").forEach(btn => btn.addEventListener("click", () => {
+  const f = btn.dataset.filter;
+  document.querySelectorAll(".chip").forEach(b => b.setAttribute("aria-pressed", b === btn));
+  shops.forEach(s => {
+    const show = f === "all" || s.type === f;
+    document.getElementById("shop-" + s.id).hidden = !show;
+  });
+}));
+
+document.getElementById("route-show").addEventListener("click", () => {
+  document.querySelectorAll(".card").forEach(el => el.classList.remove("active"));
+  frame.src = "https://www.google.com/maps?saddr=" + encodeURIComponent("肉の大山 上野店 台東区上野6-13-2")
+    + "&daddr=" + encodeURIComponent("大統領 本店 台東区上野6-10-14") + "+to:" + encodeURIComponent("徳ちゃん 御徒町店 台東区上野5-20-5")
+    + "&dirflg=w&output=embed";
+  caption.textContent = "表示中：はしご酒ルート（肉の大山 → 大統領 → 徳ちゃん、徒歩）";
+  frame.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
+});
+
+document.getElementById("route-link").href =
+  "https://www.google.com/maps/dir/?api=1&travelmode=walking"
+  + "&origin=" + encodeURIComponent("肉の大山 上野店 台東区上野6-13-2")
+  + "&waypoints=" + encodeURIComponent("大統領 本店 台東区上野6-10-14")
+  + "&destination=" + encodeURIComponent("徳ちゃん 御徒町店 台東区上野5-20-5");
+</script>
+
+</body>
+</html>
