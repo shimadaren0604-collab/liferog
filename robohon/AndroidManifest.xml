@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SDK サンプルの AndroidManifest.xml をベースに、
+  ★ の付いた行だけ追加・変更すればOK。
+  （uses-library などロボホン固有の記述はサンプルのものをそのまま残す）
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.robohonlifelog">
+
+    <!-- ★ Chart.js / Google Fonts を CDN から読むため -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:allowBackup="true"
+        android:label="ライフログ">
+
+        <!-- （ここにサンプルの uses-library 等がそのまま入る） -->
+
+        <!-- ★ activity 名をこのアプリのものに -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:screenOrientation="portrait">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

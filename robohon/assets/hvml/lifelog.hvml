@@ -1,0 +1,33 @@
+<?xml version="1.0" ?>
+<hvml version="2.0">
+  <head>
+    <producer>com.example.robohonlifelog</producer>
+    <description>ライフログ：JS から渡されたテキストの読み上げ／「今日の記録を教えて」</description>
+    <scene value="com.example.robohonlifelog.scene_common"/>
+    <version value="1.0"/>
+
+    <!-- アプリから accost で呼ばれる：memory_p の文章を読み上げ -->
+    <accost priority="75" topic_id="speak" word="com.example.robohonlifelog.speak.t1"/>
+
+    <!-- ユーザーの発話で起動：「今日の記録を教えて」「記録を読んで」 -->
+    <situation priority="78" topic_id="ask_read" trigger="user-word">
+      ${Lvcsr:Basic} include [記録,ログ] and ${Lvcsr:Basic} include [教えて,読んで,読み上げ]
+    </situation>
+  </head>
+  <body>
+    <topic id="speak" listen="false">
+      <action index="1">
+        <speech>${memory_p:com.example.robohonlifelog.speak_text}</speech>
+        <behavior id="assign" type="normal"/>
+      </action>
+    </topic>
+
+    <topic id="ask_read" listen="false">
+      <action index="1">
+        <speech>まかせて。</speech>
+        <behavior id="assign" type="normal"/>
+        <control function="read_today" target="com.example.robohonlifelog"/>
+      </action>
+    </topic>
+  </body>
+</hvml>
