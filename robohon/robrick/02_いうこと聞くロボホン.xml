@@ -1,0 +1,277 @@
+<xml xmlns="http://www.w3.org/1999/xhtml">
+  <variables/>
+  <block type="robohon_startBlocks" id="id0039" x="-200" y="-300">
+    <next>
+      <block type="robohon_speak" id="id0099">
+        <value name="WORD">
+          <shadow type="text" id="id0100">
+            <field name="TEXT">「前」「後ろ」「右」「左」で動くよ。「おしまい」で終わるね。</field>
+          </shadow>
+          <block type="text" id="id0101">
+            <field name="TEXT">「前」「後ろ」「右」「左」で動くよ。「おしまい」で終わるね。</field>
+          </block>
+        </value>
+        <next>
+          <block type="controls_whileUntil" id="id0040">
+            <field name="MODE">WHILE</field>
+            <value name="BOOL">
+              <block type="logic_boolean" id="id0041">
+                <field name="BOOL">TRUE</field>
+              </block>
+            </value>
+            <statement name="DO">
+              <block type="robohon_speak" id="id0096">
+                <value name="WORD">
+                  <shadow type="text" id="id0097">
+                    <field name="TEXT">どうする？</field>
+                  </shadow>
+                  <block type="text" id="id0098">
+                    <field name="TEXT">どうする？</field>
+                  </block>
+                </value>
+                <next>
+                  <block type="robohon_listenwaitany" id="id0095">
+                    <next>
+                      <block type="controls_if" id="id0094">
+                        <mutation elseif="4" else="1"/>
+                        <value name="IF0">
+                          <block type="logic_compare" id="id0042">
+                            <field name="OP">LT</field>
+                            <value name="A">
+                              <block type="math_number" id="id0043">
+                                <field name="NUM">0</field>
+                              </block>
+                            </value>
+                            <value name="B">
+                              <block type="text_indexOf" id="id0044">
+                                <field name="END">LAST</field>
+                                <value name="VALUE">
+                                  <block type="robohon_lastlistenword" id="id0045"/>
+                                </value>
+                                <value name="FIND">
+                                  <shadow type="text" id="id0046">
+                                    <field name="TEXT">前</field>
+                                  </shadow>
+                                  <block type="text" id="id0047">
+                                    <field name="TEXT">前</field>
+                                  </block>
+                                </value>
+                              </block>
+                            </value>
+                          </block>
+                        </value>
+                        <statement name="DO0">
+                          <block type="robohon_speak" id="id0050">
+                            <value name="WORD">
+                              <shadow type="text" id="id0051">
+                                <field name="TEXT">前に進むよ。</field>
+                              </shadow>
+                              <block type="text" id="id0052">
+                                <field name="TEXT">前に進むよ。</field>
+                              </block>
+                            </value>
+                            <next>
+                              <block type="robohon_step" id="id0048">
+                                <field name="TYPE">歩、前へ歩く</field>
+                                <value name="STEPS">
+                                  <shadow type="math_number" id="id0049">
+                                    <field name="NUM">3</field>
+                                  </shadow>
+                                </value>
+                              </block>
+                            </next>
+                          </block>
+                        </statement>
+                        <value name="IF1">
+                          <block type="logic_compare" id="id0053">
+                            <field name="OP">LT</field>
+                            <value name="A">
+                              <block type="math_number" id="id0054">
+                                <field name="NUM">0</field>
+                              </block>
+                            </value>
+                            <value name="B">
+                              <block type="text_indexOf" id="id0055">
+                                <field name="END">LAST</field>
+                                <value name="VALUE">
+                                  <block type="robohon_lastlistenword" id="id0056"/>
+                                </value>
+                                <value name="FIND">
+                                  <shadow type="text" id="id0057">
+                                    <field name="TEXT">後ろ</field>
+                                  </shadow>
+                                  <block type="text" id="id0058">
+                                    <field name="TEXT">後ろ</field>
+                                  </block>
+                                </value>
+                              </block>
+                            </value>
+                          </block>
+                        </value>
+                        <statement name="DO1">
+                          <block type="robohon_speak" id="id0061">
+                            <value name="WORD">
+                              <shadow type="text" id="id0062">
+                                <field name="TEXT">下がるね。</field>
+                              </shadow>
+                              <block type="text" id="id0063">
+                                <field name="TEXT">下がるね。</field>
+                              </block>
+                            </value>
+                            <next>
+                              <block type="robohon_step" id="id0059">
+                                <field name="TYPE">歩、後ろへ歩く</field>
+                                <value name="STEPS">
+                                  <shadow type="math_number" id="id0060">
+                                    <field name="NUM">2</field>
+                                  </shadow>
+                                </value>
+                              </block>
+                            </next>
+                          </block>
+                        </statement>
+                        <value name="IF2">
+                          <block type="logic_compare" id="id0064">
+                            <field name="OP">LT</field>
+                            <value name="A">
+                              <block type="math_number" id="id0065">
+                                <field name="NUM">0</field>
+                              </block>
+                            </value>
+                            <value name="B">
+                              <block type="text_indexOf" id="id0066">
+                                <field name="END">LAST</field>
+                                <value name="VALUE">
+                                  <block type="robohon_lastlistenword" id="id0067"/>
+                                </value>
+                                <value name="FIND">
+                                  <shadow type="text" id="id0068">
+                                    <field name="TEXT">右</field>
+                                  </shadow>
+                                  <block type="text" id="id0069">
+                                    <field name="TEXT">右</field>
+                                  </block>
+                                </value>
+                              </block>
+                            </value>
+                          </block>
+                        </value>
+                        <statement name="DO2">
+                          <block type="robohon_step" id="id0070">
+                            <field name="TYPE">回、右に回る</field>
+                            <value name="STEPS">
+                              <shadow type="math_number" id="id0071">
+                                <field name="NUM">3</field>
+                              </shadow>
+                            </value>
+                          </block>
+                        </statement>
+                        <value name="IF3">
+                          <block type="logic_compare" id="id0072">
+                            <field name="OP">LT</field>
+                            <value name="A">
+                              <block type="math_number" id="id0073">
+                                <field name="NUM">0</field>
+                              </block>
+                            </value>
+                            <value name="B">
+                              <block type="text_indexOf" id="id0074">
+                                <field name="END">LAST</field>
+                                <value name="VALUE">
+                                  <block type="robohon_lastlistenword" id="id0075"/>
+                                </value>
+                                <value name="FIND">
+                                  <shadow type="text" id="id0076">
+                                    <field name="TEXT">左</field>
+                                  </shadow>
+                                  <block type="text" id="id0077">
+                                    <field name="TEXT">左</field>
+                                  </block>
+                                </value>
+                              </block>
+                            </value>
+                          </block>
+                        </value>
+                        <statement name="DO3">
+                          <block type="robohon_step" id="id0078">
+                            <field name="TYPE">回、左に回る</field>
+                            <value name="STEPS">
+                              <shadow type="math_number" id="id0079">
+                                <field name="NUM">3</field>
+                              </shadow>
+                            </value>
+                          </block>
+                        </statement>
+                        <value name="IF4">
+                          <block type="logic_compare" id="id0080">
+                            <field name="OP">LT</field>
+                            <value name="A">
+                              <block type="math_number" id="id0081">
+                                <field name="NUM">0</field>
+                              </block>
+                            </value>
+                            <value name="B">
+                              <block type="text_indexOf" id="id0082">
+                                <field name="END">LAST</field>
+                                <value name="VALUE">
+                                  <block type="robohon_lastlistenword" id="id0083"/>
+                                </value>
+                                <value name="FIND">
+                                  <shadow type="text" id="id0084">
+                                    <field name="TEXT">おしまい</field>
+                                  </shadow>
+                                  <block type="text" id="id0085">
+                                    <field name="TEXT">おしまい</field>
+                                  </block>
+                                </value>
+                              </block>
+                            </value>
+                          </block>
+                        </value>
+                        <statement name="DO4">
+                          <block type="robohon_speakmove" id="id0087">
+                            <field name="MOTION">よろしくね</field>
+                            <value name="WORD">
+                              <shadow type="text" id="id0088">
+                                <field name="TEXT">楽しかった！またあそぼうね。</field>
+                              </shadow>
+                              <block type="text" id="id0089">
+                                <field name="TEXT">楽しかった！またあそぼうね。</field>
+                              </block>
+                            </value>
+                            <next>
+                              <block type="controls_flow_statements" id="id0086">
+                                <field name="FLOW">BREAK</field>
+                              </block>
+                            </next>
+                          </block>
+                        </statement>
+                        <statement name="ELSE">
+                          <block type="robohon_move" id="id0093">
+                            <field name="MOVE">えへへ</field>
+                            <next>
+                              <block type="robohon_speak" id="id0090">
+                                <value name="WORD">
+                                  <shadow type="text" id="id0091">
+                                    <field name="TEXT">ごめん、もう一回言って。</field>
+                                  </shadow>
+                                  <block type="text" id="id0092">
+                                    <field name="TEXT">ごめん、もう一回言って。</field>
+                                  </block>
+                                </value>
+                              </block>
+                            </next>
+                          </block>
+                        </statement>
+                      </block>
+                    </next>
+                  </block>
+                </next>
+              </block>
+            </statement>
+          </block>
+        </next>
+      </block>
+    </next>
+  </block>
+</xml>

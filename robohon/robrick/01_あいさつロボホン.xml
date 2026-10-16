@@ -1,0 +1,165 @@
+<xml xmlns="http://www.w3.org/1999/xhtml">
+  <variables/>
+  <block type="robohon_startBlocks" id="id0001" x="-200" y="-300">
+    <next>
+      <block type="robohon_speak" id="id0036">
+        <value name="WORD">
+          <shadow type="text" id="id0037">
+            <field name="TEXT">「おはよう」「こんにちは」「おやすみ」って話しかけてね。</field>
+          </shadow>
+          <block type="text" id="id0038">
+            <field name="TEXT">「おはよう」「こんにちは」「おやすみ」って話しかけてね。</field>
+          </block>
+        </value>
+        <next>
+          <block type="controls_whileUntil" id="id0002">
+            <field name="MODE">WHILE</field>
+            <value name="BOOL">
+              <block type="logic_boolean" id="id0003">
+                <field name="BOOL">TRUE</field>
+              </block>
+            </value>
+            <statement name="DO">
+              <block type="robohon_listenwaitany" id="id0035">
+                <next>
+                  <block type="controls_if" id="id0034">
+                    <mutation elseif="2" else="1"/>
+                    <value name="IF0">
+                      <block type="logic_compare" id="id0004">
+                        <field name="OP">LT</field>
+                        <value name="A">
+                          <block type="math_number" id="id0005">
+                            <field name="NUM">0</field>
+                          </block>
+                        </value>
+                        <value name="B">
+                          <block type="text_indexOf" id="id0006">
+                            <field name="END">LAST</field>
+                            <value name="VALUE">
+                              <block type="robohon_lastlistenword" id="id0007"/>
+                            </value>
+                            <value name="FIND">
+                              <shadow type="text" id="id0008">
+                                <field name="TEXT">おはよう</field>
+                              </shadow>
+                              <block type="text" id="id0009">
+                                <field name="TEXT">おはよう</field>
+                              </block>
+                            </value>
+                          </block>
+                        </value>
+                      </block>
+                    </value>
+                    <statement name="DO0">
+                      <block type="robohon_speakmove" id="id0010">
+                        <field name="MOTION">よろしくね</field>
+                        <value name="WORD">
+                          <shadow type="text" id="id0011">
+                            <field name="TEXT">おはよう！今日もがんばろうね。</field>
+                          </shadow>
+                          <block type="text" id="id0012">
+                            <field name="TEXT">おはよう！今日もがんばろうね。</field>
+                          </block>
+                        </value>
+                      </block>
+                    </statement>
+                    <value name="IF1">
+                      <block type="logic_compare" id="id0013">
+                        <field name="OP">LT</field>
+                        <value name="A">
+                          <block type="math_number" id="id0014">
+                            <field name="NUM">0</field>
+                          </block>
+                        </value>
+                        <value name="B">
+                          <block type="text_indexOf" id="id0015">
+                            <field name="END">LAST</field>
+                            <value name="VALUE">
+                              <block type="robohon_lastlistenword" id="id0016"/>
+                            </value>
+                            <value name="FIND">
+                              <shadow type="text" id="id0017">
+                                <field name="TEXT">こんにちは</field>
+                              </shadow>
+                              <block type="text" id="id0018">
+                                <field name="TEXT">こんにちは</field>
+                              </block>
+                            </value>
+                          </block>
+                        </value>
+                      </block>
+                    </value>
+                    <statement name="DO1">
+                      <block type="robohon_speak" id="id0019">
+                        <value name="WORD">
+                          <shadow type="text" id="id0020">
+                            <field name="TEXT">こんにちは！元気？</field>
+                          </shadow>
+                          <block type="text" id="id0021">
+                            <field name="TEXT">こんにちは！元気？</field>
+                          </block>
+                        </value>
+                      </block>
+                    </statement>
+                    <value name="IF2">
+                      <block type="logic_compare" id="id0022">
+                        <field name="OP">LT</field>
+                        <value name="A">
+                          <block type="math_number" id="id0023">
+                            <field name="NUM">0</field>
+                          </block>
+                        </value>
+                        <value name="B">
+                          <block type="text_indexOf" id="id0024">
+                            <field name="END">LAST</field>
+                            <value name="VALUE">
+                              <block type="robohon_lastlistenword" id="id0025"/>
+                            </value>
+                            <value name="FIND">
+                              <shadow type="text" id="id0026">
+                                <field name="TEXT">おやすみ</field>
+                              </shadow>
+                              <block type="text" id="id0027">
+                                <field name="TEXT">おやすみ</field>
+                              </block>
+                            </value>
+                          </block>
+                        </value>
+                      </block>
+                    </value>
+                    <statement name="DO2">
+                      <block type="robohon_speakmove" id="id0028">
+                        <field name="MOTION">おやすみ</field>
+                        <value name="WORD">
+                          <shadow type="text" id="id0029">
+                            <field name="TEXT">おやすみなさい。また明日ね。</field>
+                          </shadow>
+                          <block type="text" id="id0030">
+                            <field name="TEXT">おやすみなさい。また明日ね。</field>
+                          </block>
+                        </value>
+                      </block>
+                    </statement>
+                    <statement name="ELSE">
+                      <block type="robohon_speakmove" id="id0031">
+                        <field name="MOTION">下を向く</field>
+                        <value name="WORD">
+                          <shadow type="text" id="id0032">
+                            <field name="TEXT">んん？もう一回言ってくれる？</field>
+                          </shadow>
+                          <block type="text" id="id0033">
+                            <field name="TEXT">んん？もう一回言ってくれる？</field>
+                          </block>
+                        </value>
+                      </block>
+                    </statement>
+                  </block>
+                </next>
+              </block>
+            </statement>
+          </block>
+        </next>
+      </block>
+    </next>
+  </block>
+</xml>
