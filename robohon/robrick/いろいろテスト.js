@@ -9,8 +9,6 @@ Robohon.speech('次は、右を向く');
 Robohon.move('右を向く');
 Robohon.speech('次は、下を向く');
 Robohon.move('下を向く');
-Robohon.speech('次は、よろしくね');
-Robohon.move('よろしくね');
 Robohon.speech('次は、おやすみ');
 Robohon.move('おやすみ');
 Robohon.speech('次は、えへへ');
@@ -28,6 +26,7 @@ Robohon.move('右手を下げる');
 
 // ---- 2. しゃべりながら動く（speakmove） ----
 Robohon.speakmove('しゃべりながら手をあげるよ。', '大きく右手を上げる');
+Robohon.speakmove('よろしくね。', 'よろしくね'); // よろしくね は speakmove 専用？
 Robohon.move('右手を下げる');
 
 // ---- 3. 歩く・回る（stepMotion） ----
